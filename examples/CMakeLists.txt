@@ -15,16 +15,16 @@ if (NOT raylib_FOUND)
         FetchContent_Declare(
         raylib
         GIT_REPOSITORY https://github.com/raysan5/raylib.git
-        GIT_TAG 6.0
+        # Track raylib's master branch, so CI verifies compatibility with the latest raylib.
+        GIT_TAG master
         GIT_SHALLOW 1
     )
     FetchContent_GetProperties(raylib)
     if (NOT raylib_POPULATED) # Have we downloaded raylib yet?
         set(FETCHCONTENT_QUIET NO)
-        FetchContent_Populate(raylib)
         set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
-        add_subdirectory(${raylib_SOURCE_DIR} ${raylib_BINARY_DIR})
+        FetchContent_MakeAvailable(raylib)
     endif()
 endif()
 
@@ -57,6 +57,24 @@ endforeach()
 # Multiple Files Example
 add_executable("multiple" multiple/main.cpp multiple/Player.cpp)
 target_link_libraries("multiple" PUBLIC raylib_cpp raylib)
+
+# C++20 modules example: only built when modules are enabled and the
+# raylib_cpp_modules target was created (CMake 3.28+).
+if(BUILD_RAYLIB_CPP_MODULES AND TARGET raylib_cpp_modules)
+    add_executable("module" module/main.cpp)
+    target_link_libraries("module" PRIVATE raylib_cpp_modules)
+    set_target_properties("module" PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+        # Match raylib_cpp_modules' language flags: the compiled module (BMI)
+        # can only be imported by a consumer built with the same C++ standard
+        # and extension settings, so keep the default extensions here.
+        CXX_EXTENSIONS ON
+        # The examples directory defaults to C++11, so module scanning is not
+        # enabled for this target automatically; turn it on explicitly.
+        CXX_SCAN_FOR_MODULES ON
+    )
+endif()
 
 # Copy all the resources
 file(COPY ${example_resources} DESTINATION "resources/")

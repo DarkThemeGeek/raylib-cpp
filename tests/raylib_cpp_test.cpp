@@ -103,7 +103,12 @@ int main(int argc, char* argv[]) {
     {
         std::string input = "Hello World!";
         std::string output = raylib::TextInsert(input, "Good!", 0);
+        // raylib 6.1 fixes a TextInsert() bug that dropped the text before the insert position.
+#if RAYLIB_VERSION_MAJOR == 6 && RAYLIB_VERSION_MINOR == 0
         AssertEqual(output, "Good! World!");
+#else
+        AssertEqual(output, "Good!Hello World!");
+#endif
     }
 
     // raylib::TextSubtext()
@@ -149,6 +154,26 @@ int main(int argc, char* argv[]) {
         raylib::FileText text(path + "/resources/lorem.txt");
         Assert(text.GetLength() > 0, "Expected file to be loaded correctly");
         AssertEqual(text.ToString().substr(0, 5), "Lorem");
+    }
+
+    // BoundingBox
+    {
+        ::Vector3 min = {1, 2, 3};
+        ::Vector3 max = {4, 5, 6};
+        raylib::BoundingBox boundingBox(min, max);
+        raylib::Vector3 newMin = boundingBox.GetMin();
+        raylib::Vector3 newMax = boundingBox.GetMax();
+
+        AssertEqual(newMin.GetX(), min.x);
+        AssertEqual(newMin.GetY(), min.y);
+        AssertEqual(newMin.GetZ(), min.z);
+
+        AssertEqual(newMax.GetX(), max.x);
+        AssertEqual(newMax.GetY(), max.y);
+        AssertEqual(newMax.GetZ(), max.z);
+
+        boundingBox.SetMin({9, 8, 7});
+        AssertEqual(boundingBox.GetMin(), (raylib::Vector3{9, 8, 7}));
     }
 
     TraceLog(LOG_INFO, "TEST: raylib-cpp test");
